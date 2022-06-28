@@ -65,5 +65,7 @@ int main()
 		std::cout << test_out[i] << " ";
 	std::cout << "\n\n" << std::flush;
 
+	ann::visualize_nn(&structure, "test.png");
+
 	return 0;
 }

@@ -12,5 +12,5 @@ endif()
 
 target_include_directories(
 	ATP_NN PUBLIC
-	"${CMAKE_SOURCE_DIR}/dependencies/fpng/src"
+	"${CMAKE_SOURCE_DIR}/dependencies/fpng/include"
 )
