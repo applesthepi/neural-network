@@ -9,3 +9,8 @@ if(MSVC)
 	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/include/lungo FILES ${ATP_NN_SRC})
 	target_compile_options(ATP_NN PRIVATE "/MP")
 endif()
+
+target_include_directories(
+	ATP_NN PUBLIC
+	"${CMAKE_SOURCE_DIR}/dependencies/fpng/src"
+)
