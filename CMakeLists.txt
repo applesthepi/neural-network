@@ -25,5 +25,5 @@ else()
 	set(LINUX False)
 endif()
 
-add_subdirectory(atpnn)
-add_subdirectory(test)
+add_subdirectory("atpnn")
+add_subdirectory("test")

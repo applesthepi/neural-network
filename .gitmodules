@@ -1,3 +1,9 @@
 [submodule "dependencies/stb"]
 	path = dependencies/stb
 	url = https://github.com/applesthepi/stb
+[submodule "dependencies/glm"]
+	path = dependencies/glm
+	url = https://github.com/g-truc/glm
+[submodule "dependencies/sfml"]
+	path = dependencies/sfml
+	url = https://github.com/SFML/SFML
