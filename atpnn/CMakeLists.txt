@@ -10,25 +10,27 @@ if(MSVC)
 	target_compile_options(ATP_NN PRIVATE "/MP")
 endif()
 
-# Detect and add SFML
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/dependencies" ${CMAKE_MODULE_PATH})
-#Find any version 2.X of SFML
-#See the FindSFML.cmake file for additional details and instructions
-find_package(SFML REQUIRED network audio graphics window system)
+# set(SFML_STATIC_LIBRARIES TRUE)
+find_package(SFML COMPONENTS network audio graphics window system REQUIRED)
 
 target_include_directories(
 	ATP_NN PUBLIC
 	"${CMAKE_SOURCE_DIR}/dependencies/stb/include"
 	"${CMAKE_SOURCE_DIR}/dependencies/glm"
-	${SFML_INCLUDE_DIR}
+	# ${SFML_INCLUDE_DIR}
 )
 
 target_link_libraries(
 	ATP_NN PUBLIC
+	sfml-network
+	sfml-audio
+	sfml-graphics
+	sfml-window
+	sfml-system
 	# glm
-	${SFML_LIBRARIES}
-	${SFML_DEPENDENCIES}
+	# ${SFML_LIBRARIES}
+	# ${SFML_DEPENDENCIES}
 )
 
-message(STATUS "DEBUG PRINT: ${SFML_LIBRARIES}")
-message(STATUS "DEBUG PRINT: ${SFML_DEPENDENCIES}")
+# message(STATUS "DEBUG PRINT: ${SFML_LIBRARIES}")
+# message(STATUS "DEBUG PRINT: ${SFML_DEPENDENCIES}")

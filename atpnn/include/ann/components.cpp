@@ -1,11 +1,14 @@
 #include "components.hpp"
 
+#include "visualizer.hpp"
+
 #include <sstream>
 #include <cstring>
 #include <string>
 #include <iomanip>
 #include <random>
 #include <iostream>
+#include <glm/glm.hpp>
 
 void ann::create_nn_structure(nn_structure* structure, uint8_t layer_count, uint16_t* layer_neuron_count)
 {
@@ -33,7 +36,7 @@ void ann::create_nn_structure(nn_structure* structure, uint8_t layer_count, uint
 		{
 			// BIAS
 			
-			structure->layer_neuron_bias[layer][layer_neuron] = 1.0f;//dis_11(device);
+			structure->layer_neuron_bias[layer][layer_neuron] = 0.0f;//dis_11(device);
 
 			// WEIGHTS
 
@@ -113,7 +116,7 @@ void ann::calc_nn(nn_structure* structure, float* input, float* output)
 	memcpy(output, structure->layer_neuron_activation[structure->layer_count - 1], sizeof(float) * structure->layer_neuron_count[structure->layer_count - 1]);
 }
 
-void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_count, size_t batch_count, float** sample_input, float** sample_output)
+void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_count, size_t batch_count, size_t visual_mod, float** sample_input, float** sample_output)
 {
 	ann::nn_mod* mod = (ann::nn_mod*)malloc(sizeof(ann::nn_mod) * (batch_count + 1));
 
@@ -208,9 +211,15 @@ void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_cou
 					{
 						float& s_con = structure->layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
 						float& m_con = mod[batch_count].layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
-						float dcon = m_con * 1.0f;
+						// float dcon = m_con * (glm::clamp(-1.0f * glm::abs(s_con) + 1.0f, 0.0f, 0.9f) + 0.1f);
+						float dcon = m_con;
 						// std::cout << m_con << "\n";
 						s_con += dcon;
+						s_con *= 0.99f;
+						if (s_con > 1.0f)
+							s_con = 1.0f;
+						else if (s_con < -1.0f)
+							s_con = -1.0f;
 					}
 				}
 				
@@ -219,6 +228,9 @@ void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_cou
 
 			memset(mod[batch_count].layer_neuron_bias[layer], 0, sizeof(float) * structure->layer_neuron_count[layer]);
 		}
+
+		if (visual_mod > 0 && i % visual_mod == 0)
+			ann::visualize_nn(structure, "nn" + std::to_string(i) + ".png");
 	}
 }
 
@@ -231,7 +243,7 @@ void ann::train_sample(nn_structure* structure, nn_mod* mod, float* sample_input
 	{
 		// Error MUST be 0-1
 		float error = sample_output[layer_neuron] - structure->layer_neuron_activation[structure->layer_count - 1][layer_neuron];
-		error = std::pow(error, 2.0f);
+		// error = std::pow(error, 2.0f);
 		mod->layer_neuron_activation[structure->layer_count - 1][layer_neuron] = error;
 		// std::cout << error << "\n";
 	}
@@ -240,8 +252,8 @@ void ann::train_sample(nn_structure* structure, nn_mod* mod, float* sample_input
 	{
 		for (uint16_t layer_neuron = 0; layer_neuron < structure->layer_neuron_count[layer]; layer_neuron++)
 		{
-			// Error MUST be 0-1
-			float error = mod->layer_neuron_activation[layer][layer_neuron] / (float)structure->layer_neuron_count[layer];
+			float error = mod->layer_neuron_activation[layer][layer_neuron];// / (float)structure->layer_neuron_count[layer];
+			error = glm::clamp(glm::pow(error, 3.0f), -1.0f, 1.0f);
 			//float error = std::pow(mod->layer_neuron_activation[layer][layer_neuron] / (float)structure->layer_neuron_count[layer], 2.0f);
 
 			// std::cout << error << "\n";
@@ -253,10 +265,12 @@ void ann::train_sample(nn_structure* structure, nn_mod* mod, float* sample_input
 				float& s_con = structure->layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
 				float& m_act = mod->layer_neuron_activation[layer - 1][layer_neuron_con];
 				float& m_con = mod->layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
-				float con_dir = (std::round(s_con * 0.5f + 0.5f) * 2.0f - 1.0f);
+				// float con_dir = (std::round(s_con * 0.5f + 0.5f) * 2.0f - 1.0f);
+				float con_dir = 1.0f;
 
-				m_con += error * con_dir * s_act * 10.0f;
-				m_act += error * con_dir * s_act * 1.0f;
+				m_con += error * (s_act - 0.5f) * 1.0f;
+				m_act += ((s_act - 0.5f) + (error * 0.1f)) * 0.5f;
+				// m_act += s_con;
 				// std::cout << m_act << "\n";
 			}
 		}

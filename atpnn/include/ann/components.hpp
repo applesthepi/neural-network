@@ -41,7 +41,7 @@ void calc_neuron(nn_structure* structure, uint8_t layer, uint16_t neuron);
 
 void calc_nn(nn_structure* structure, float* input, float* output);
 
-void train_nn(nn_structure* structure, size_t iterations, size_t sample_count, size_t batch_count, float** sample_input, float** sample_output);
+void train_nn(nn_structure* structure, size_t iterations, size_t sample_count, size_t batch_count, size_t visual_mod, float** sample_input, float** sample_output);
 
 void train_sample(nn_structure* structure, nn_mod* mod, float* sample_input, float* sample_output);
 }
