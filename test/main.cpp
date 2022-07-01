@@ -8,7 +8,7 @@
 
 constexpr size_t td_count = 100000;
 constexpr size_t tds_count = 1;
-constexpr uint16_t input_layer = 5;
+constexpr uint16_t input_layer = 3;
 
 int main()
 {
@@ -16,7 +16,7 @@ int main()
 
 	static std::random_device device_rng;
 	static std::mt19937 device(device_rng());
-	static std::uniform_int_distribution<int> dis_04(0, 1);
+	static std::uniform_int_distribution<int> dis_04(0, 2);
 
 	float** sample_inputs = (float**)malloc(sizeof(float*) * td_count);
 	float** sample_outputs = (float**)malloc(sizeof(float*) * td_count);
@@ -41,8 +41,8 @@ int main()
 	// CREATE NN
 
 	ann::nn_structure structure;
-	ann::create_nn_structure(&structure, 4, new uint16_t[4]{
-		input_layer, 5, 5, 5
+	ann::create_nn_structure(&structure, 5, new uint16_t[5]{
+		input_layer, 9, 5, 5, 3
 	});
 
 	// std::cout << "TEST SAMPLE CASE\n"
@@ -54,19 +54,23 @@ int main()
 
 	ann::calc_nn(&structure, sample_inputs[0], test_out);
 	std::cout << "TEST\n";
-	for (uint8_t i = 0; i < 5; i++)
+	for (uint8_t i = 0; i < input_layer; i++)
 		std::cout << test_out[i] << " ";
 	std::cout << "\n\n" << std::flush;
 
-	ann::train_nn(&structure, 200, td_count, tds_count, 30, sample_inputs, sample_outputs);
+	ann::train_nn(&structure, 1000, td_count, tds_count, 100, sample_inputs, sample_outputs);
 
 	ann::calc_nn(&structure, sample_inputs[0], test_out);
 	std::cout << "TEST\n";
-	for (uint8_t i = 0; i < 5; i++)
+	for (uint8_t i = 0; i < input_layer; i++)
 		std::cout << test_out[i] << " ";
 	std::cout << "\n\n" << std::flush;
 
-	// ann::visualize_nn(&structure, "test.png");
+	for (size_t i = 0; i < 10; i++)
+	{
+		ann::calc_nn(&structure, sample_inputs[i], test_out);
+		ann::visualize_nn(&structure, "result_" + std::to_string(i) + ".png");
+	}
 
 	return 0;
 }

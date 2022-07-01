@@ -26,11 +26,11 @@ void ann::create_nn_structure(nn_structure* structure, uint8_t layer_count, uint
 
 	for (uint8_t layer = 0; layer < layer_count; layer++)
 	{
-		structure->layer_neuron_activation[layer] = (float*)malloc(sizeof(float) * layer_count);
-		structure->layer_neuron_bias[layer] = (float*)malloc(sizeof(float) * layer_count);
-		structure->layer_neuron_con_weight[layer] = (float**)malloc(sizeof(float*) * layer_count);
+		structure->layer_neuron_activation[layer] = (float*)malloc(sizeof(float) * layer_neuron_count[layer]);
+		structure->layer_neuron_bias[layer] = (float*)malloc(sizeof(float) * layer_neuron_count[layer]);
+		structure->layer_neuron_con_weight[layer] = (float**)malloc(sizeof(float*) * layer_neuron_count[layer]);
 
-		memset(structure->layer_neuron_activation[layer], 0, sizeof(float) * layer_count);
+		memset(structure->layer_neuron_activation[layer], 0, sizeof(float) * layer_neuron_count[layer]);
 
 		for (uint16_t layer_neuron = 0; layer_neuron < layer_neuron_count[layer]; layer_neuron++)
 		{
@@ -154,6 +154,9 @@ void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_cou
 
 	for (size_t i = 0; i < iterations; i++)
 	{
+		if (visual_mod > 0 && i % visual_mod == 0)
+			ann::visualize_nn(structure, "nn_" + std::to_string(i) + ".png");
+		
 		// TRAIN SAMPLES
 		
 		for (size_t a = 0; a < batch_count; a++)
@@ -212,7 +215,13 @@ void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_cou
 						float& s_con = structure->layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
 						float& m_con = mod[batch_count].layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
 						// float dcon = m_con * (glm::clamp(-1.0f * glm::abs(s_con) + 1.0f, 0.0f, 0.9f) + 0.1f);
-						float dcon = m_con;
+						float dcon = m_con / (float)batch_count;
+
+						if (dcon < 0.0f && dcon > -0.01f)
+							dcon = -0.01f;
+						else if (dcon > 0.0f && dcon < 0.01f)
+							dcon = 0.01f;
+
 						// std::cout << m_con << "\n";
 						s_con += dcon;
 						s_con *= 0.99f;
@@ -228,9 +237,6 @@ void ann::train_nn(nn_structure* structure, size_t iterations, size_t sample_cou
 
 			memset(mod[batch_count].layer_neuron_bias[layer], 0, sizeof(float) * structure->layer_neuron_count[layer]);
 		}
-
-		if (visual_mod > 0 && i % visual_mod == 0)
-			ann::visualize_nn(structure, "nn" + std::to_string(i) + ".png");
 	}
 }
 
@@ -242,9 +248,9 @@ void ann::train_sample(nn_structure* structure, nn_mod* mod, float* sample_input
 	for (uint16_t layer_neuron = 0; layer_neuron < structure->layer_neuron_count[structure->layer_count - 1]; layer_neuron++)
 	{
 		// Error MUST be 0-1
-		float error = sample_output[layer_neuron] - structure->layer_neuron_activation[structure->layer_count - 1][layer_neuron];
+		float target_delta = sample_output[layer_neuron] - structure->layer_neuron_activation[structure->layer_count - 1][layer_neuron];
 		// error = std::pow(error, 2.0f);
-		mod->layer_neuron_activation[structure->layer_count - 1][layer_neuron] = error;
+		mod->layer_neuron_activation[structure->layer_count - 1][layer_neuron] = target_delta;
 		// std::cout << error << "\n";
 	}
 
@@ -252,8 +258,8 @@ void ann::train_sample(nn_structure* structure, nn_mod* mod, float* sample_input
 	{
 		for (uint16_t layer_neuron = 0; layer_neuron < structure->layer_neuron_count[layer]; layer_neuron++)
 		{
-			float error = mod->layer_neuron_activation[layer][layer_neuron];// / (float)structure->layer_neuron_count[layer];
-			error = glm::clamp(glm::pow(error, 3.0f), -1.0f, 1.0f);
+			float target_delta = mod->layer_neuron_activation[layer][layer_neuron];// / (float)structure->layer_neuron_count[layer];
+			target_delta = glm::clamp(glm::pow(target_delta, 3.0f), -1.0f, 1.0f);
 			//float error = std::pow(mod->layer_neuron_activation[layer][layer_neuron] / (float)structure->layer_neuron_count[layer], 2.0f);
 
 			// std::cout << error << "\n";
@@ -266,10 +272,10 @@ void ann::train_sample(nn_structure* structure, nn_mod* mod, float* sample_input
 				float& m_act = mod->layer_neuron_activation[layer - 1][layer_neuron_con];
 				float& m_con = mod->layer_neuron_con_weight[layer][layer_neuron][layer_neuron_con];
 				// float con_dir = (std::round(s_con * 0.5f + 0.5f) * 2.0f - 1.0f);
-				float con_dir = 1.0f;
+				// float con_dir = 1.0f;
 
-				m_con += error * (s_act - 0.5f) * 1.0f;
-				m_act += ((s_act - 0.5f) + (error * 0.1f)) * 0.5f;
+				m_con += (s_act - 0.5f) * (target_delta * 1.0f) + (target_delta * 0.1f);
+				m_act += /*((s_act - 0.5f) * 0.1f) + */(target_delta * 1.0f) * (s_con * 1.0f);
 				// m_act += s_con;
 				// std::cout << m_act << "\n";
 			}
